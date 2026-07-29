@@ -3,3 +3,5 @@ pandas
 openpyxl
 pillow
 streamlit-js-eval
+sqlalchemy
+psycopg2-binary
