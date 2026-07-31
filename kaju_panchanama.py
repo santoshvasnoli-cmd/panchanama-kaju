@@ -241,6 +241,22 @@ if df is not None:
     # ८. पंचनामा फॉर्म (PostgreSQL मध्ये जतन करा)
     # ---------------------------------------------------------
     st.subheader("नुकसानीचा तपशील")
+    # Session state मध्ये फोटो स्टोअर करण्यासाठी
+    if 'captured_photo' not in st.session_state:
+        st.session_state['captured_photo'] = None
+
+    # १. कॅमेरा सुरु/बंद करण्यासाठी Toggle स्विच
+    show_camera = st.toggle("📷 फोटो काढण्यासाठी कॅमेरा सुरु करा", value=False)
+
+    if show_camera:
+        temp_photo = st.camera_input("पिकाचा फोटो घ्या")
+        if temp_photo:
+            st.session_state['captured_photo'] = temp_photo
+            st.success("✅ फोटो कॅप्चर झाला आहे!")
+
+    # जर फोटो आधीच घेतला असेल तर त्याचा रिव्ह्यू दाखवा
+    if st.session_state['captured_photo']:
+        st.image(st.session_state['captured_photo'], caption="कॅप्चर केलेला फोटो", width=250)
     with st.form("panchnama_form", clear_on_submit=True):
         selected_crop = st.selectbox("नुकसान झालेले पीक निवडा", options=["काजू"])
         
@@ -253,14 +269,15 @@ if df is not None:
         )
         
         tree_count = st.number_input("बाधित काजू झाडांची संख्या", min_value=1, step=1, value=1)
-        photo = st.camera_input("पिकाचा फोटो घ्या")
+        
         remark = st.text_area("शेरा (काही असल्यास)")
         
         submit = st.form_submit_button("पंचनामा जतन करा")
 
         if submit:
+            photo = st.session_state['captured_photo']
             if not photo:
-                st.error("❌ कृपया फोटो काढा!")
+                st.error("❌ कृपया आधी कॅमेरा चालू करून फोटो काढा!")
             elif not lat:
                 st.error("❌ GPS लोकेशन मिळाले नाही. कृपया लोकेशन सुरु करा.")
             elif damage_area <= 0:
