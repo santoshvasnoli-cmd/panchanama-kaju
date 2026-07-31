@@ -51,6 +51,38 @@ def get_db_engine():
     return create_engine(db_url)
 
 engine = get_db_engine()
+# टेबल नसल्यास ऑटो-क्रिएट करण्याचे फंक्शन
+def init_db():
+    create_table_query = text("""
+        CREATE TABLE IF NOT EXISTS panchnama_records (
+            "वेळ" VARCHAR(50),
+            "गाव" VARCHAR(100),
+            "गट_क्र" VARCHAR(50),
+            "खाते_क्र" VARCHAR(50),
+            "खातेदार" VARCHAR(150),
+            "पीक" VARCHAR(100),
+            "नुकसान_क्षेत्र" FLOAT,
+            "बाधित_झाडांची_संख्या" BIGINT,
+            "अक्षांश" FLOAT,
+            "रेखांश" FLOAT,
+            "फोटो_पाथ" TEXT,
+            "नोंदणी_अधिकारी" VARCHAR(100),
+            "शेरा" TEXT
+        );
+    """)
+    try:
+        with engine.begin() as conn:
+            conn.execute(create_table_query)
+    except Exception as e:
+        st.error(f"डेटाबेस टेबल तयार करताना त्रुटी आली: {e}")
+
+init_db()
+
+def load_data_from_db():
+    try:
+        return pd.read_sql("SELECT * FROM panchnama_records", engine)
+    except Exception:
+        return pd.DataFrame()
 
 # ⚠️ हे फंक्शन इथे 'load_data_from_db()' जोडा (Line 187 च्या आधी)
 def load_data_from_db():
@@ -288,7 +320,7 @@ if df is not None:
                 watermarked_img = add_watermark(photo, lat, lon, timestamp, village, selected_gat, final_data['name'])
                 
                 if not os.path.exists('photos'): 
-                    os.makedirs('photos')
+                    os.makedirs('photos', exist_ok=True)
                 
                 photo_filename = f"photos/{village}_{selected_gat}_{datetime.datetime.now().strftime('%H%M%S')}.jpg"
                 watermarked_img.save(photo_filename)
