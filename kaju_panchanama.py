@@ -22,24 +22,43 @@ st.markdown("""
 # ---------------------------------------------------------
 # २. PostgreSQL डेटाबेस कनेक्शन आणि टेबल ऑटो-क्रिएशन
 # ---------------------------------------------------------
+# ---------------------------------------------------------
+# डेटाबेस कनेक्शन सेटअप
+# ---------------------------------------------------------
 def get_db_engine():
-    # Railway किंवा Secrets मधील DATABASE_URL मिळवणे
-    db_url = st.secrets.get("DATABASE_URL", os.environ.get("DATABASE_URL", "postgresql://postgres:OrBBcLgGcQSMKWYKWNBCkXUjsFWCjJWK@sakura.proxy.rlwy.net:19200/railway"))
-    
-    # Railway वरील postgres:// हे बदलून postgresql:// करणे आवश्यक आहे
-    if db_url.startswith("postgres://"):
+    db_url = None
+    try:
+        if "DATABASE_URL" in st.secrets:
+            db_url = st.secrets["DATABASE_URL"]
+    except Exception:
+        db_url = None
+
+    if not db_url:
+        db_url = os.environ.get(
+            "DATABASE_URL", 
+            "postgresql://postgres:OrBBcLgGcQSMKWYKWNBCkXUjsFWCjJWK@sakura.proxy.rlwy.net:19200/railway"
+        )
+
+    if db_url and db_url.startswith("postgres://"):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
-        
+        # 🛠️ कनेक्शन फ्रेश ठेवण्यासाठी pool_pre_ping आणि pool_recycle जोडले आहे
+    return create_engine(
+        db_url,
+        pool_pre_ping=True,  # डेटाबेस जोडणी कट झाली असल्यास आपोआप पुन्हा जोडते
+        pool_recycle=300,    # दर ५ मिनिटांनी कनेक्शन री-फ्रेश करते
+    )
+
     return create_engine(db_url)
 
 engine = get_db_engine()
 
-# डेटाबेसमधून डेटा वाचणे
+# ⚠️ हे फंक्शन इथे 'load_data_from_db()' जोडा (Line 187 च्या आधी)
 def load_data_from_db():
     try:
         return pd.read_sql("SELECT * FROM panchnama_records", engine)
     except Exception:
         return pd.DataFrame()
+
 
 # ---------------------------------------------------------
 # ३. युजर लॉगिन क्रिडेन्शियल्स व सेटअप
