@@ -5,10 +5,10 @@ import os
 import time
 from PIL import Image, ImageDraw, ImageFont
 from streamlit_js_eval import get_geolocation
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text, BigInteger, String, Float, Text
 
 # ---------------------------------------------------------
-# १. पेज सेटअप (ही कमांड नेहमी सर्वात वर असायला हवी)
+# १. पेज सेटअप
 # ---------------------------------------------------------
 st.set_page_config(page_title="पीक पंचनामा प्रणाली", layout="centered")
 
@@ -18,27 +18,31 @@ st.markdown("""
     .stButton>button { width: 100%; border-radius: 10px; height: 3em; background-color: #007bff; color: white; }
     </style>
     """, unsafe_allow_html=True)
+
 # ---------------------------------------------------------
-# २. डेटाबेस कनेक्शन सेटअप (Postgres / SQLite Fallback)
+# २. PostgreSQL डेटाबेस कनेक्शन आणि टेबल ऑटो-क्रिएशन
 # ---------------------------------------------------------
 def get_db_engine():
-    # Render किंवा Railway वरील DATABASE_URL मधील postgres:// ला postgresql:// मध्ये बदलणे
-    db_url = st.secrets.get("DATABASE_URL", os.environ.get("DATABASE_URL", "sqlite:///panchnama_local.db"))
+    # Railway किंवा Secrets मधील DATABASE_URL मिळवणे
+    db_url = st.secrets.get("DATABASE_URL", os.environ.get("DATABASE_URL", "postgresql://postgres:OrBBcLgGcQSMKWYKWNBCkXUjsFWCjJWK@sakura.proxy.rlwy.net:19200/railway"))
+    
+    # Railway वरील postgres:// हे बदलून postgresql:// करणे आवश्यक आहे
     if db_url.startswith("postgres://"):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
+        
     return create_engine(db_url)
 
 engine = get_db_engine()
 
+# डेटाबेसमधून डेटा वाचणे
 def load_data_from_db():
     try:
         return pd.read_sql("SELECT * FROM panchnama_records", engine)
     except Exception:
-        # जर टेबल नसेल तर रिकामी फ्रेम
         return pd.DataFrame()
-    
+
 # ---------------------------------------------------------
-# २. युजर लॉगिन क्रिडेन्शियल्स व सेटअप
+# ३. युजर लॉगिन क्रिडेन्शियल्स व सेटअप
 # ---------------------------------------------------------
 USER_CREDENTIALS = {
     "officer1": "Sdp*1354",
@@ -76,14 +80,13 @@ if not st.session_state['logged_in']:
     login_page()
     st.stop()
 
-# लॉगिन यशस्वी झाल्यावर साइडबार
 st.sidebar.success(f"लॉगिन: {st.session_state['user_display_name']}")
 if st.sidebar.button("Log Out"):
     st.session_state['logged_in'] = False
     st.rerun()
 
 # ---------------------------------------------------------
-# ३. GPS लोकेशन मिळवणे
+# ४. GPS लोकेशन मिळवणे
 # ---------------------------------------------------------
 loc = get_geolocation()
 lat, lon = None, None
@@ -96,7 +99,7 @@ elif loc and isinstance(loc, dict) and 'latitude' in loc:
     lon = loc['longitude']
 
 # ---------------------------------------------------------
-# ४. वॉटरमार्क फंक्शन
+# ५. वॉटरमार्क फंक्शन
 # ---------------------------------------------------------
 def add_watermark(image_file, lat, lon, timestamp, village, gat_no, farmer_name):
     img = Image.open(image_file)
@@ -107,28 +110,28 @@ def add_watermark(image_file, lat, lon, timestamp, village, gat_no, farmer_name)
     except:
         font = ImageFont.load_default()
     
-    text = (f"दिनांक: {timestamp}\n"
-            f"अक्षांश: {lat} | रेखांश: {lon}\n"
-            f"गाव: {village} | गट क्र: {gat_no}\n"
-            f"खातेदार: {farmer_name}")
+    text_content = (f"दिनांक: {timestamp}\n"
+                    f"अक्षांश: {lat} | रेखांश: {lon}\n"
+                    f"गाव: {village} | गट क्र: {gat_no}\n"
+                    f"खातेदार: {farmer_name}")
     
-    draw.text((20, 20), text, fill=(255, 255, 255), font=font, stroke_width=2, stroke_fill=(0,0,0))
+    draw.text((20, 20), text_content, fill=(255, 255, 255), font=font, stroke_width=2, stroke_fill=(0,0,0))
     return img
 
 # ---------------------------------------------------------
-# ५. डेटा लोड करणे
+# ६. खातेदार डेटा लोड करणे
 # ---------------------------------------------------------
 @st.cache_data
 def load_khatedar_data():
     file_name = "khatedar list.xlsx"
     if os.path.exists(file_name):
-        df = pd.read_excel(file_name)
-        df.columns = df.columns.str.strip()
-        df['गट क्रमांक'] = df['गट क्रमांक'].astype(str).str.strip()
-        df['खाते क्रमांक'] = df['खाते क्रमांक'].astype(str).str.strip()
-        return df
+        df_kh = pd.read_excel(file_name)
+        df_kh.columns = df_kh.columns.str.strip()
+        df_kh['गट क्रमांक'] = df_kh['गट क्रमांक'].astype(str).str.strip()
+        df_kh['खाते क्रमांक'] = df_kh['खाते क्रमांक'].astype(str).str.strip()
+        return df_kh
     else:
-        st.error(f"❌ '{file_name}' फाईल सापडली नाही. कृपया फाईल तपासा.")
+        st.error(f"❌ '{file_name}' फाईल सापडली नाही. कृपया GitHub वर फाईल अपलोड करा.")
         return None
 
 df = load_khatedar_data()
@@ -142,7 +145,7 @@ if df is not None:
         st.warning("📍 कृपया लोकेशन (GPS) चालू करा आणि परवानगी द्या.")
 
     # ---------------------------------------------------------
-    # ६. निवड प्रक्रिया (गाव / गट / खातेदार)
+    # ७. निवड प्रक्रिया
     # ---------------------------------------------------------
     st.subheader("शेतकरी माहिती निवडा")
     village_list = df['गाव'].unique()
@@ -174,22 +177,22 @@ if df is not None:
     selected_option = st.selectbox("गटातील खातेदार निवडा", farmer_options)
     final_data = mapping[selected_option]
     
-    # मागील नोंदी तपासून क्षेत्र काढणे
+    # PostgreSQL मधून आधीच्या नोंदी तपासणे
+    db_records = load_data_from_db()
     already_filled = 0.0
-    csv_file = "offline_panchnama_records.csv"
     past_records = pd.DataFrame()
 
-    if os.path.exists(csv_file):
-        temp_df = pd.read_csv(csv_file)
-        temp_df['खाते_क्र'] = temp_df['खाते_क्र'].astype(str).str.strip()
-        temp_df['गट_क्र'] = temp_df['गट_क्र'].astype(str).str.strip()
+    if not db_records.empty:
+        db_records['खाते_क्र'] = db_records['खाते_क्र'].astype(str).str.strip()
+        db_records['गट_क्र'] = db_records['गट_क्र'].astype(str).str.strip()
         
-        past_records = temp_df[
-            (temp_df['गाव'] == village) & 
-            (temp_df['गट_क्र'] == str(selected_gat)) & 
-            (temp_df['खाते_क्र'] == str(final_data['khata_no']))
+        past_records = db_records[
+            (db_records['गाव'] == village) & 
+            (db_records['गट_क्र'] == str(selected_gat)) & 
+            (db_records['खाते_क्र'] == str(final_data['khata_no']))
         ]
-        already_filled = past_records['नुकसान_क्षेत्र'].sum()
+        if not past_records.empty:
+            already_filled = past_records['नुकसान_क्षेत्र'].sum()
 
     cell_total = final_data['area']
     remaining_area = round(max(0.0, cell_total - already_filled), 4)
@@ -199,11 +202,10 @@ if df is not None:
     col2.metric("नोंदणी झालेले", f"{round(already_filled, 4)} हे.")
     col3.metric("शिल्लक उपलब्ध", f"{remaining_area} हे.")
 
-    # मागील नोंदींचा तक्ता
     if not past_records.empty:
         st.markdown("---")
         st.subheader("📋 आधी नोंदवलेली पिके")
-        summary_df = past_records[['खातेदार','गट_क्र', 'खाते_क्र', 'पीक','नुकसान_क्षेत्र']].rename(
+        summary_df = past_records[['खातेदार', 'गट_क्र', 'खाते_क्र', 'पीक', 'नुकसान_क्षेत्र']].rename(
             columns={
                 'खातेदार': 'खातेदाराचे नाव',
                 'गट_क्र': 'गट क्रमांक',
@@ -217,37 +219,36 @@ if df is not None:
         st.info("ℹ️ या खात्यावर अद्याप कोणतीही पीक नोंदणी झालेली नाही.")
 
     # ---------------------------------------------------------
-    # ७. पंचनामा फॉर्म
+    # ८. पंचनामा फॉर्म (PostgreSQL मध्ये जतन करा)
     # ---------------------------------------------------------
     st.subheader("नुकसानीचा तपशील")
     with st.form("panchnama_form", clear_on_submit=True):
-        selected_crop = st.selectbox("नुकसान झालेले पीक निवडा", 
-                                     options=["काजू"])
+        selected_crop = st.selectbox("नुकसान झालेले पीक निवडा", options=["काजू"])
         
-        damage_area = st.number_input(f"नुकसान क्षेत्र भरा (कमाल {remaining_area})", 
-                                     min_value=0.0, max_value=float(remaining_area) if remaining_area > 0 else 0.0, 
-                                     step=0.0001, format="%.4f")
+        damage_area = st.number_input(
+            f"नुकसान क्षेत्र भरा (कमाल {remaining_area})", 
+            min_value=0.0, 
+            max_value=float(remaining_area) if remaining_area > 0 else 0.0, 
+            step=0.0001, 
+            format="%.4f"
+        )
         
-        tree_count = st.number_input("बाधित काजू झाडांची संख्या", 
-                                         min_value=1, step=1, value=1)
+        tree_count = st.number_input("बाधित काजू झाडांची संख्या", min_value=1, step=1, value=1)
         photo = st.camera_input("पिकाचा फोटो घ्या")
         remark = st.text_area("शेरा (काही असल्यास)")
         
         submit = st.form_submit_button("पंचनामा जतन करा")
 
         if submit:
-            if selected_crop == "निवडा...":
-                st.error("⚠️ कृपया पीक निवडा.")
-            elif not photo:
+            if not photo:
                 st.error("❌ कृपया फोटो काढा!")
             elif not lat:
-                st.error("❌ GPS लोकेशन मिळाले नाही. कृपया ब्राऊझरमध्ये लोकेशन अलाऊ करा.")
+                st.error("❌ GPS लोकेशन मिळाले नाही. कृपया लोकेशन सुरु करा.")
             elif damage_area <= 0:
                 st.error("⚠️ कृपया वैध नुकसान क्षेत्र भरा.")
             else:
                 timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 
-                # फोटो वॉटरमार्क करणे
                 watermarked_img = add_watermark(photo, lat, lon, timestamp, village, selected_gat, final_data['name'])
                 
                 if not os.path.exists('photos'): 
@@ -256,7 +257,7 @@ if df is not None:
                 photo_filename = f"photos/{village}_{selected_gat}_{datetime.datetime.now().strftime('%H%M%S')}.jpg"
                 watermarked_img.save(photo_filename)
 
-                # डेटा सेव्ह करणे
+                # PostgreSQL डेटा सेव्ह करा
                 data_to_save = {
                     "वेळ": timestamp, 
                     "गाव": village, 
@@ -264,32 +265,47 @@ if df is not None:
                     "खाते_क्र": str(final_data['khata_no']),
                     "खातेदार": final_data['name'],
                     "पीक": selected_crop, 
-                    "नुकसान_क्षेत्र": damage_area,
+                    "नुकसान_क्षेत्र": float(damage_area),
                     "बाधित_झाडांची_संख्या": int(tree_count),
-                    "अक्षांश": lat, 
-                    "रेखांश": lon,
+                    "अक्षांश": float(lat), 
+                    "रेखांश": float(lon),
                     "फोटो_पाथ": photo_filename,
                     "नोंदणी_अधिकारी": st.session_state['user_display_name'],
                     "शेरा": remark
                 }
                 
+                # Column data types Explicitly देणे (PostgreSQL मॅपिंग)
+                dtype_mapping = {
+                    "वेळ": String(50),
+                    "गाव": String(100),
+                    "गट_क्र": String(50),
+                    "खाते_क्र": String(50),
+                    "खातेदार": String(150),
+                    "पीक": String(100),
+                    "नुकसान_क्षेत्र": Float,
+                    "बाधित_झाडांची_संख्या": BigInteger,
+                    "अक्षांश": Float,
+                    "रेखांश": Float,
+                    "फोटो_पाथ": Text,
+                    "नोंदणी_अधिकारी": String(100),
+                    "शेरा": Text
+                }
+
                 save_df = pd.DataFrame([data_to_save])
-                save_df.to_sql("panchnama_records", engine, if_exists='append', index=False)
+                save_df.to_sql("panchnama_records", engine, if_exists='append', index=False, dtype=dtype_mapping)
                 
-                st.success("✅ पंचनामा यशस्वीरित्या जतन झाला!")
+                st.success("✅ पंचनामा PostgreSQL डेटाबेस मध्ये जतन झाला!")
                 st.balloons()
                 time.sleep(2)
                 st.rerun()
 
     # ---------------------------------------------------------
-    # ८. अहवाल आणि जुन्या नोंदी पाहणे
+    # ९. अहवाल आणि जुन्या नोंदी पाहणे
     # ---------------------------------------------------------
-    if os.path.exists(csv_file):
+    if not db_records.empty:
         st.markdown("---")
         st.header("📊 पंचनामा अहवाल तपासणी")
 
-        temp_df = pd.read_csv(csv_file)
-        
         view_option = st.radio(
             "कशानुसार माहिती पाहायची आहे?", 
             ["निवडलेल्या गटानुसार", "निवडलेल्या खातेदारानुसार"], 
@@ -297,16 +313,16 @@ if df is not None:
         )
 
         if view_option == "निवडलेल्या गटानुसार":
-            report_df = temp_df[
-                (temp_df['गाव'] == village) & 
-                (temp_df['गट_क्र'].astype(str) == str(selected_gat))
+            report_df = db_records[
+                (db_records['गाव'] == village) & 
+                (db_records['गट_क्र'].astype(str) == str(selected_gat))
             ]
             title = f"📍 गट क्र. {selected_gat} मधील सर्व नोंदी"
         else:
-            report_df = temp_df[
-                (temp_df['गाव'] == village) & 
-                (temp_df['गट_क्र'].astype(str) == str(selected_gat)) & 
-                (temp_df['खाते_क्र'].astype(str) == str(final_data['khata_no']))
+            report_df = db_records[
+                (db_records['गाव'] == village) & 
+                (db_records['गट_क्र'].astype(str) == str(selected_gat)) & 
+                (db_records['खाते_क्र'].astype(str) == str(final_data['khata_no']))
             ]
             title = f"👤 खातेदार: {final_data['name']} यांच्या नोंदी"
 
@@ -325,35 +341,33 @@ if df is not None:
             
             total_area_sum = round(report_df['नुकसान_क्षेत्र'].sum(), 4)
             st.warning(f"🔎 वरील फिल्टरनुसार एकूण नोंदवलेले क्षेत्र: **{total_area_sum} हे.**")
-        else:
-            st.info("ℹ️ या निवडीसाठी अद्याप कोणतीही नोंद सापडली नाही.")
 
     # ---------------------------------------------------------
-    # ९. साइडबार - डाऊनलोड आणि एडिट विभाग
+    # १०. डाऊनलोड आणि एडिट विभाग
     # ---------------------------------------------------------
-    if os.path.exists(csv_file):
+    if not db_records.empty:
         st.sidebar.markdown("---")
         st.sidebar.subheader("📥 डेटा डाउनलोड")
-        with open(csv_file, "rb") as file:
-            st.sidebar.download_button(
-                label="रिपोर्ट डाउनलोड करा (CSV)",
-                data=file,
-                file_name=f"panchnama_report_{datetime.date.today()}.csv",
-                mime="text/csv"
-            )
+        
+        csv_bytes = db_records.to_csv(index=False).encode('utf-8')
+        st.sidebar.download_button(
+            label="रिपोर्ट डाउनलोड करा (CSV)",
+            data=csv_bytes,
+            file_name=f"panchnama_report_{datetime.date.today()}.csv",
+            mime="text/csv"
+        )
 
         st.sidebar.markdown("---")
         if st.sidebar.checkbox("📝 नोंद दुरुस्त करा (Edit)"):
-            all_records = pd.read_csv(csv_file)
-            
             st.subheader("🛠️ नोंद दुरुस्ती विभाग")
+            
             selected_idx = st.selectbox(
                 "दुरुस्त करण्यासाठी नोंद निवडा:", 
-                all_records.index, 
-                format_func=lambda x: f"{all_records.iloc[x]['खातेदार']} | गट:{all_records.iloc[x]['गट_क्र']} | {all_records.iloc[x]['पीक']} ({all_records.iloc[x]['नुकसान_क्षेत्र']} हे.)"
+                db_records.index, 
+                format_func=lambda x: f"{db_records.iloc[x]['खातेदार']} | गट:{db_records.iloc[x]['गट_क्र']} | {db_records.iloc[x]['पीक']} ({db_records.iloc[x]['नुकसान_क्षेत्र']} हे.)"
             )
             
-            record = all_records.iloc[selected_idx]
+            record = db_records.iloc[selected_idx]
             
             with st.form("edit_form"):
                 st.info(f"नोंद बदलत आहे: {record['खातेदार']} (गट: {record['गट_क्र']})")
@@ -363,10 +377,12 @@ if df is not None:
                 
                 new_crop = st.selectbox("पीक बदला", crop_options, index=current_crop_idx)
                 
-                new_area = st.number_input("क्षेत्र दुरुस्त करा (हे.)", 
-                                          min_value=0.0, 
-                                          value=float(record['नुकसान_क्षेत्र']), 
-                                          format="%.4f")
+                new_area = st.number_input(
+                    "क्षेत्र दुरुस्त करा (हे.)", 
+                    min_value=0.0, 
+                    value=float(record['नुकसान_क्षेत्र']), 
+                    format="%.4f"
+                )
                 
                 current_trees = int(record['बाधित_झाडांची_संख्या']) if 'बाधित_झाडांची_संख्या' in record and pd.notna(record['बाधित_झाडांची_संख्या']) else 0
                 new_trees = st.number_input("बाधित झाडांची संख्या दुरुस्त करा", min_value=0, value=current_trees, step=1)
@@ -379,7 +395,10 @@ if df is not None:
                     with engine.begin() as conn:
                         query = text("""
                             UPDATE panchnama_records 
-                            SET "पीक" = :crop, "नुकसान_क्षेत्र" = :area, "बाधित_झाडांची_संख्या" = :trees, "शेरा" = :remark 
+                            SET "पीक" = :crop, 
+                                "नुकसान_क्षेत्र" = :area, 
+                                "बाधित_झाडांची_संख्या" = :trees, 
+                                "शेरा" = :remark 
                             WHERE "वेळ" = :time_val AND "खातेदार" = :farmer
                         """)
                         conn.execute(query, {
@@ -391,8 +410,7 @@ if df is not None:
                             "farmer": record['खातेदार']
                         })
                     
-                    
-                    st.success("✅ नोंद यशस्वीरित्या अपडेट केली आहे!")
+                    st.success("✅ PostgreSQL मधील नोंद अपडेट झाली!")
                     st.balloons()
                     time.sleep(2)
                     st.rerun()
