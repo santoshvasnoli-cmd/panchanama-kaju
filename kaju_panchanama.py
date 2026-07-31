@@ -361,21 +361,23 @@ if df is not None:
             total_area_sum = round(report_df['नुकसान_क्षेत्र'].sum(), 4)
             st.warning(f"🔎 वरील फिल्टरनुसार एकूण नोंदवलेले क्षेत्र: **{total_area_sum} हे.**")
 
-    # ---------------------------------------------------------
+ # ---------------------------------------------------------
     # १०. डाऊनलोड आणि एडिट विभाग
     # ---------------------------------------------------------
     if not db_records.empty:
         st.sidebar.markdown("---")
         st.sidebar.subheader("📥 डेटा डाउनलोड")
         
-        csv_bytes = db_records.to_csv(index=False).encode('utf-8')
+        # utf-8-sig एनकोडिंग वापरून फाईल तयार करा
+        csv_bytes = db_records.to_csv(index=False, encoding='utf-8-sig').encode('utf-8-sig')
+        
         st.sidebar.download_button(
             label="रिपोर्ट डाउनलोड करा (CSV)",
             data=csv_bytes,
             file_name=f"panchnama_report_{datetime.date.today()}.csv",
             mime="text/csv"
         )
-
+        
         st.sidebar.markdown("---")
         if st.sidebar.checkbox("📝 नोंद दुरुस्त करा (Edit)"):
             st.subheader("🛠️ नोंद दुरुस्ती विभाग")
