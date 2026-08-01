@@ -31,24 +31,59 @@ st.markdown("""
         background-color: #218838 !important;
         color: white !important;
     } 
-    /* 📱 मोबाईल आणि स्क्रीनसाठी Font Size लहान करण्यासाठी CSS */
-    [data-testid="stMetricValue"] {
-        font-size: 1.4rem !important;  /* आंकड्यांची साईज लहान करण्यासाठी (उदा. 1.0 हे.) */
-        font-weight: 700 !important;
+    /* Selectbox */
+    div[data-baseweb="select"] > div {
+        min-height: 55px !important;
+        font-size: 18px !important;
     }
-    [data-testid="stMetricLabel"] {
-        font-size: 0.9rem !important;  /* लेबल्सची साईज लहान करण्यासाठी (उदा. एकूण क्षेत्र) */
+
+    /* Number Input */
+    div[data-testid="stNumberInput"] input {
+        height: 55px !important;
+        font-size: 18px !important;
     }
-    
-    /* लहान मोबाईल स्क्रीनसाठी अतिरिक्त अ‍ॅडजस्टमेंट */
-    @media (max-width: 700px) {
-        [data-testid="stMetricValue"] {
-            font-size: 1.7rem !important;
+
+    /* Text Input */
+    div[data-testid="stTextInput"] input {
+        height: 55px !important;
+        font-size: 18px !important;
+    }
+
+    /* Text Area */
+    div[data-testid="stTextArea"] textarea {
+        min-height: 120px !important;
+        font-size: 18px !important;
+    }
+
+    /* Labels */
+    label {
+        font-size: 18px !important;
+        font-weight: 600 !important;
+    }
+
+    /* Mobile */
+    @media (max-width:768px){
+
+        div[data-baseweb="select"] > div{
+            min-height:60px !important;
         }
-        [data-testid="stMetricLabel"] {
-            font-size: 0.9rem !important;
+
+        div[data-testid="stNumberInput"] input,
+        div[data-testid="stTextInput"] input{
+            height:60px !important;
+            font-size:20px !important;
+        }
+
+        div[data-testid="stTextArea"] textarea{
+            min-height:140px !important;
+            font-size:20px !important;
+        }
+
+        label{
+            font-size:20px !important;
         }
     }
+
     </style>
     """, unsafe_allow_html=True)
 
