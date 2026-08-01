@@ -85,6 +85,7 @@ engine = get_db_engine()
 def init_db():
     create_table_query = text("""
         CREATE TABLE IF NOT EXISTS panchnama_records (
+            "ID" SERIAL PRIMARY KEY,
             "वेळ" VARCHAR(50),
             "गाव" VARCHAR(100),
             "गट_क्र" VARCHAR(50),
@@ -278,6 +279,7 @@ if df is not None:
                 timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
                 data_to_save = {
+                    
                     "वेळ": timestamp, 
                     "गाव": village, 
                     "गट_क्र": str(selected_gat),
