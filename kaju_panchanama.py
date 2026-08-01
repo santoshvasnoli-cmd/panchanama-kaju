@@ -13,7 +13,42 @@ st.set_page_config(page_title="पीक पंचनामा प्रणा�
 st.markdown("""
     <style>
     .main { background-color: #f5f7f9; }
-    .stButton>button { width: 100%; border-radius: 10px; height: 3em; background-color: #007bff; color: white; }
+    
+    /* 🟢 सर्वसामान्य बटण आणि "पंचनामा जतन करा" बटणासाठी हिरवा रंग */
+    div[data-testid="stFormSubmitButton"] > button{ 
+        width: 100%; 
+        border-radius: 10px; 
+        height: 3em; 
+        background-color: #28a745 !important;  /* आकर्षक हिरवा रंग */
+        color: white !important; 
+        font-weight: bold !important;
+        font-size: 1.1rem !important;
+        border: none !important;
+    }
+
+    /* बटणावर होव्हर (Hover) केल्यावर किंचित गडद हिरवा रंग */
+    .stButton>button:hover {
+        background-color: #218838 !important;
+        color: white !important;
+    } 
+    /* 📱 मोबाईल आणि स्क्रीनसाठी Font Size लहान करण्यासाठी CSS */
+    [data-testid="stMetricValue"] {
+        font-size: 1.4rem !important;  /* आंकड्यांची साईज लहान करण्यासाठी (उदा. 1.0 हे.) */
+        font-weight: 600 !important;
+    }
+    [data-testid="stMetricLabel"] {
+        font-size: 0.9rem !important;  /* लेबल्सची साईज लहान करण्यासाठी (उदा. एकूण क्षेत्र) */
+    }
+    
+    /* लहान मोबाईल स्क्रीनसाठी अतिरिक्त अ‍ॅडजस्टमेंट */
+    @media (max-width: 600px) {
+        [data-testid="stMetricValue"] {
+            font-size: 1.2rem !important;
+        }
+        [data-testid="stMetricLabel"] {
+            font-size: 0.8rem !important;
+        }
+    }
     </style>
     """, unsafe_allow_html=True)
 
