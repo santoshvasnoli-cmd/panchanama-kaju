@@ -34,19 +34,19 @@ st.markdown("""
     /* 📱 मोबाईल आणि स्क्रीनसाठी Font Size लहान करण्यासाठी CSS */
     [data-testid="stMetricValue"] {
         font-size: 1.4rem !important;  /* आंकड्यांची साईज लहान करण्यासाठी (उदा. 1.0 हे.) */
-        font-weight: 600 !important;
+        font-weight: 700 !important;
     }
     [data-testid="stMetricLabel"] {
         font-size: 0.9rem !important;  /* लेबल्सची साईज लहान करण्यासाठी (उदा. एकूण क्षेत्र) */
     }
     
     /* लहान मोबाईल स्क्रीनसाठी अतिरिक्त अ‍ॅडजस्टमेंट */
-    @media (max-width: 600px) {
+    @media (max-width: 700px) {
         [data-testid="stMetricValue"] {
-            font-size: 1.2rem !important;
+            font-size: 1.7rem !important;
         }
         [data-testid="stMetricLabel"] {
-            font-size: 0.8rem !important;
+            font-size: 0.9rem !important;
         }
     }
     </style>
@@ -231,9 +231,9 @@ if df is not None:
     remaining_area = round(max(0.0, cell_total - already_filled), 4)
 
     col1, col2, col3 = st.columns(3)
-    col1.metric("एकूण क्षेत्र", f"{cell_total} हे.")
-    col2.metric("नोंदणी झालेले", f"{round(already_filled, 4)} हे.")
-    col3.metric("शिल्लक उपलब्ध", f"{remaining_area} हे.")
+    col1.metric("एकूण क्षेत्र", f"{cell_total} ")
+    col2.metric("नोंदणी झालेले", f"{round(already_filled, 4)} ")
+    col3.metric("शिल्लक उपलब्ध", f"{remaining_area} ")
 
     if not past_records.empty:
         st.markdown("---")
