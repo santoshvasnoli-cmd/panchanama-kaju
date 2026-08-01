@@ -3,8 +3,6 @@ import pandas as pd
 import datetime
 import os
 import time
-from PIL import Image, ImageDraw, ImageFont
-from streamlit_js_eval import get_geolocation
 from sqlalchemy import create_engine, text, BigInteger, String, Float, Text
 
 # ---------------------------------------------------------
@@ -22,9 +20,7 @@ st.markdown("""
 # ---------------------------------------------------------
 # २. PostgreSQL डेटाबेस कनेक्शन आणि टेबल ऑटो-क्रिएशन
 # ---------------------------------------------------------
-# ---------------------------------------------------------
-# डेटाबेस कनेक्शन सेटअप
-# ---------------------------------------------------------
+@st.cache_resource
 def get_db_engine():
     db_url = None
     try:
@@ -41,16 +37,15 @@ def get_db_engine():
 
     if db_url and db_url.startswith("postgres://"):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
-        # 🛠️ कनेक्शन फ्रेश ठेवण्यासाठी pool_pre_ping आणि pool_recycle जोडले आहे
+
     return create_engine(
         db_url,
-        pool_pre_ping=True,  # डेटाबेस जोडणी कट झाली असल्यास आपोआप पुन्हा जोडते
-        pool_recycle=300,    # दर ५ मिनिटांनी कनेक्शन री-फ्रेश करते
+        pool_pre_ping=True,  # कनेक्शन कट झाल्यास पुन्हा आपोआप जोडते
+        pool_recycle=300     # दर ५ मिनिटांनी री-फ्रेश
     )
 
-    return create_engine(db_url)
-
 engine = get_db_engine()
+
 # टेबल नसल्यास ऑटो-क्रिएट करण्याचे फंक्शन
 def init_db():
     create_table_query = text("""
@@ -63,9 +58,6 @@ def init_db():
             "पीक" VARCHAR(100),
             "नुकसान_क्षेत्र" FLOAT,
             "बाधित_झाडांची_संख्या" BIGINT,
-            "अक्षांश" FLOAT,
-            "रेखांश" FLOAT,
-            "फोटो_पाथ" TEXT,
             "नोंदणी_अधिकारी" VARCHAR(100),
             "शेरा" TEXT
         );
@@ -83,14 +75,6 @@ def load_data_from_db():
         return pd.read_sql("SELECT * FROM panchnama_records", engine)
     except Exception:
         return pd.DataFrame()
-
-# ⚠️ हे फंक्शन इथे 'load_data_from_db()' जोडा (Line 187 च्या आधी)
-def load_data_from_db():
-    try:
-        return pd.read_sql("SELECT * FROM panchnama_records", engine)
-    except Exception:
-        return pd.DataFrame()
-
 
 # ---------------------------------------------------------
 # ३. युजर लॉगिन क्रिडेन्शियल्स व सेटअप
@@ -137,40 +121,7 @@ if st.sidebar.button("Log Out"):
     st.rerun()
 
 # ---------------------------------------------------------
-# ४. GPS लोकेशन मिळवणे
-# ---------------------------------------------------------
-loc = get_geolocation()
-lat, lon = None, None
-
-if loc and isinstance(loc, dict) and 'coords' in loc:
-    lat = loc['coords']['latitude']
-    lon = loc['coords']['longitude']
-elif loc and isinstance(loc, dict) and 'latitude' in loc:
-    lat = loc['latitude']
-    lon = loc['longitude']
-
-# ---------------------------------------------------------
-# ५. वॉटरमार्क फंक्शन
-# ---------------------------------------------------------
-def add_watermark(image_file, lat, lon, timestamp, village, gat_no, farmer_name):
-    img = Image.open(image_file)
-    draw = ImageDraw.Draw(img)
-    try:
-        font_path = "Lohit Marathi Regular.ttf" 
-        font = ImageFont.truetype(font_path, 20)
-    except:
-        font = ImageFont.load_default()
-    
-    text_content = (f"दिनांक: {timestamp}\n"
-                    f"अक्षांश: {lat} | रेखांश: {lon}\n"
-                    f"गाव: {village} | गट क्र: {gat_no}\n"
-                    f"खातेदार: {farmer_name}")
-    
-    draw.text((20, 20), text_content, fill=(255, 255, 255), font=font, stroke_width=2, stroke_fill=(0,0,0))
-    return img
-
-# ---------------------------------------------------------
-# ६. खातेदार डेटा लोड करणे
+# ४. खातेदार डेटा लोड करणे
 # ---------------------------------------------------------
 @st.cache_data
 def load_khatedar_data():
@@ -189,14 +140,9 @@ df = load_khatedar_data()
 
 if df is not None:
     st.title("🌾 पीक पंचनामा - साझा सुळेरान")
-    
-    if lat and lon:
-        st.success(f"📍 GPS लोकेशन प्राप्त: {lat}, {lon}")
-    else:
-        st.warning("📍 कृपया लोकेशन (GPS) चालू करा आणि परवानगी द्या.")
 
     # ---------------------------------------------------------
-    # ७. निवड प्रक्रिया
+    # ५. निवड प्रक्रिया
     # ---------------------------------------------------------
     st.subheader("शेतकरी माहिती निवडा")
     village_list = df['गाव'].unique()
@@ -270,25 +216,10 @@ if df is not None:
         st.info("ℹ️ या खात्यावर अद्याप कोणतीही पीक नोंदणी झालेली नाही.")
 
     # ---------------------------------------------------------
-    # ८. पंचनामा फॉर्म (PostgreSQL मध्ये जतन करा)
+    # ६. पंचनामा फॉर्म
     # ---------------------------------------------------------
     st.subheader("नुकसानीचा तपशील")
-    # Session state मध्ये फोटो स्टोअर करण्यासाठी
-    if 'captured_photo' not in st.session_state:
-        st.session_state['captured_photo'] = None
 
-    # १. कॅमेरा सुरु/बंद करण्यासाठी Toggle स्विच
-    show_camera = st.toggle("📷 फोटो काढण्यासाठी कॅमेरा सुरु करा", value=False)
-
-    if show_camera:
-        temp_photo = st.camera_input("पिकाचा फोटो घ्या")
-        if temp_photo:
-            st.session_state['captured_photo'] = temp_photo
-            st.success("✅ फोटो कॅप्चर झाला आहे!")
-
-    # जर फोटो आधीच घेतला असेल तर त्याचा रिव्ह्यू दाखवा
-    if st.session_state['captured_photo']:
-        st.image(st.session_state['captured_photo'], caption="कॅप्चर केलेला फोटो", width=250)
     with st.form("panchnama_form", clear_on_submit=True):
         selected_crop = st.selectbox("नुकसान झालेले पीक निवडा", options=["काजू"])
         
@@ -301,31 +232,16 @@ if df is not None:
         )
         
         tree_count = st.number_input("बाधित काजू झाडांची संख्या", min_value=1, step=1, value=1)
-        
         remark = st.text_area("शेरा (काही असल्यास)")
         
         submit = st.form_submit_button("पंचनामा जतन करा")
 
         if submit:
-            photo = st.session_state['captured_photo']
-            if not photo:
-                st.error("❌ कृपया आधी कॅमेरा चालू करून फोटो काढा!")
-            elif not lat:
-                st.error("❌ GPS लोकेशन मिळाले नाही. कृपया लोकेशन सुरु करा.")
-            elif damage_area <= 0:
+            if damage_area <= 0:
                 st.error("⚠️ कृपया वैध नुकसान क्षेत्र भरा.")
             else:
                 timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                
-                watermarked_img = add_watermark(photo, lat, lon, timestamp, village, selected_gat, final_data['name'])
-                
-                if not os.path.exists('photos'): 
-                    os.makedirs('photos', exist_ok=True)
-                
-                photo_filename = f"photos/{village}_{selected_gat}_{datetime.datetime.now().strftime('%H%M%S')}.jpg"
-                watermarked_img.save(photo_filename)
 
-                # PostgreSQL डेटा सेव्ह करा
                 data_to_save = {
                     "वेळ": timestamp, 
                     "गाव": village, 
@@ -335,14 +251,10 @@ if df is not None:
                     "पीक": selected_crop, 
                     "नुकसान_क्षेत्र": float(damage_area),
                     "बाधित_झाडांची_संख्या": int(tree_count),
-                    "अक्षांश": float(lat), 
-                    "रेखांश": float(lon),
-                    "फोटो_पाथ": photo_filename,
                     "नोंदणी_अधिकारी": st.session_state['user_display_name'],
                     "शेरा": remark
                 }
                 
-                # Column data types Explicitly देणे (PostgreSQL मॅपिंग)
                 dtype_mapping = {
                     "वेळ": String(50),
                     "गाव": String(100),
@@ -352,9 +264,6 @@ if df is not None:
                     "पीक": String(100),
                     "नुकसान_क्षेत्र": Float,
                     "बाधित_झाडांची_संख्या": BigInteger,
-                    "अक्षांश": Float,
-                    "रेखांश": Float,
-                    "फोटो_पाथ": Text,
                     "नोंदणी_अधिकारी": String(100),
                     "शेरा": Text
                 }
@@ -368,7 +277,7 @@ if df is not None:
                 st.rerun()
 
     # ---------------------------------------------------------
-    # ९. अहवाल आणि जुन्या नोंदी पाहणे
+    # ७. अहवाल आणि जुन्या नोंदी पाहणे
     # ---------------------------------------------------------
     if not db_records.empty:
         st.markdown("---")
@@ -410,14 +319,13 @@ if df is not None:
             total_area_sum = round(report_df['नुकसान_क्षेत्र'].sum(), 4)
             st.warning(f"🔎 वरील फिल्टरनुसार एकूण नोंदवलेले क्षेत्र: **{total_area_sum} हे.**")
 
- # ---------------------------------------------------------
-    # १०. डाऊनलोड आणि एडिट विभाग
+    # ---------------------------------------------------------
+    # ८. डाऊनलोड आणि एडिट विभाग
     # ---------------------------------------------------------
     if not db_records.empty:
         st.sidebar.markdown("---")
         st.sidebar.subheader("📥 डेटा डाउनलोड")
         
-        # utf-8-sig एनकोडिंग वापरून फाईल तयार करा
         csv_bytes = db_records.to_csv(index=False, encoding='utf-8-sig').encode('utf-8-sig')
         
         st.sidebar.download_button(
