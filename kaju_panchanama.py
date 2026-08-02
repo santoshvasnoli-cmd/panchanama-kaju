@@ -156,7 +156,8 @@ USER_CREDENTIALS = {
     "officer3": "Ramesh*123",
     "officer4": "Sudhir*123",
     "officer5": "123456",
-    "REVVPPM9601":"Vaibhav@1996"
+    "REVVPPM9601":"Vaibhav@1996",
+    "NAGESH_KALE": "Nagesh@123"
 }
 
 USER_NAMES = {
@@ -165,7 +166,8 @@ USER_NAMES = {
     "officer3": "रमेश दिनकर यादव (ग्राम महसूल अधिकारी)",
     "officer4": "सुधीर गोरे (ग्राम महसूल अधिकारी)",
     "officer5": "श्रीरंग सुतार  (कोतवाल )",
-    "REVVPPM9601": "वैभव पाटील (ग्राम महसूल अधिकारी)"
+    "REVVPPM9601": "वैभव पाटील (ग्राम महसूल अधिकारी)",
+    "NAGESH_KALE": "नागेश काळे (सहाय्यक कृषी अधिकारी)",
 }
 
 if 'logged_in' not in st.session_state:
