@@ -33,20 +33,20 @@ st.markdown("""
     } 
     /* Selectbox */
     div[data-baseweb="select"] > div {
-        min-height: 55px !important;
-        font-size: 18px !important;
+        min-height: 70px !important;
+        font-size: 25px !important;
     }
 
     /* Number Input */
     div[data-testid="stNumberInput"] input {
-        height: 55px !important;
-        font-size: 18px !important;
+        height: 70px !important;
+        font-size: 25px !important;
     }
 
     /* Text Input */
     div[data-testid="stTextInput"] input {
-        height: 55px !important;
-        font-size: 18px !important;
+        height: 70px !important;
+        font-size: 25px !important;
     }
 
     /* Text Area */
@@ -65,12 +65,12 @@ st.markdown("""
     @media (max-width:768px){
 
         div[data-baseweb="select"] > div{
-            min-height:60px !important;
+            min-height:70px !important;
         }
 
         div[data-testid="stNumberInput"] input,
         div[data-testid="stTextInput"] input{
-            height:60px !important;
+            height:70px !important;
             font-size:20px !important;
         }
 
@@ -159,7 +159,7 @@ USER_CREDENTIALS = {
 }
 
 USER_NAMES = {
-    "REVSDPM8801": "संतोष धनाजी पाटील (तलाठी)",
+    "REVSDPM8801": "संतोष धनाजी पाटील (ग्राम महसूल अधिकारी)",
     "REVASPF8701": "पूनम संतोष पाटील (ग्राम महसूल अधिकारी)",
     "officer3": "रमेश दिनकर यादव (ग्राम महसूल अधिकारी)",
     "officer4": "सुधीर गोरे (ग्राम महसूल अधिकारी)",
