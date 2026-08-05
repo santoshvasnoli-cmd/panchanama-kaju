@@ -155,12 +155,12 @@ USER_CREDENTIALS = {
     "REVASPF8701": "Sdp@1354#",
     "officer3": "Ramesh*123",
     "officer4": "Sudhir*123",
-    "officer5": "123456",
+    "officer5": "1234576",
     "REVVPPM9601":"Vaibhav@1996",
     "NAGESH_KALE": "Nagesh@123",
     "SHIV_BHOSALE": "Shiv@123",
-    "RAMESH_KAMBLE": "Ravi@123",
-    "SURYAKANT_JADHAV": "Suryakant@123"
+    "RAMESH_KAMBLE": "Ravi*$@2",
+    "SURYAKANT_JADHAV": "Sury***@##"
 }
 
 USER_NAMES = {
