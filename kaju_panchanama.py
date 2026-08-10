@@ -154,7 +154,7 @@ def load_data_from_db():
 USER_CREDENTIALS = {
     "REVSDPM8801": "Sdp@1354##",
     "REVASPF8701": "Sdp@1354#",
-    "officer3": "Ramesh*123",
+    "REMESH_YADAV": "Ramesh@123",
     "officer4": "Sudhir*123",
     "officer5": "1234576",
     "REVVPPM9601":"Vaibhav@1996",
@@ -168,7 +168,7 @@ USER_CREDENTIALS = {
 USER_NAMES = {
     "REVSDPM8801": "संतोष धनाजी पाटील (ग्राम महसूल अधिकारी)",
     "REVASPF8701": "पूनम संतोष पाटील (ग्राम महसूल अधिकारी)",
-    "officer3": "रमेश दिनकर यादव (ग्राम महसूल अधिकारी)",
+    "REMESH_YADAV": "रमेश दिनकर यादव (ग्राम महसूल अधिकारी)",
     "officer4": "सुधीर गोरे (ग्राम महसूल अधिकारी)",
     "officer5": "श्रीरंग सुतार  (कोतवाल )",
     "REVVPPM9601": "वैभव पाटील (ग्राम महसूल अधिकारी)",
