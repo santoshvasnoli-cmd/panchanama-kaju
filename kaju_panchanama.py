@@ -163,6 +163,7 @@ USER_CREDENTIALS = {
     "RAMESH_KAMBLE": "Ravi*$@2",
     "SURYAKANT_JADHAV": "Sury***@##",
     "ANITA_KAMBLE": "Anita@123",
+    "JITENDRA_DESAI": "Jitendra@123",
 }
 
 USER_NAMES = {
@@ -177,6 +178,7 @@ USER_NAMES = {
     "RAMESH_KAMBLE": "रवींद्र  कांबले (ग्राम पंचायत  अधिकारी)",
     "SURYAKANT_JADHAV": "सुर्यकांत जाधव (ग्राम पंचायत  अधिकारी)",
     "ANITA_KAMBLE": "अनिता कांबळे (सहाय्यक कृषी अधिकारी)",
+    "JITENDRA_DESAI": "जितेंद्र देसाई (ग्राम पंचायत  अधिकारी)"
 }
 
 if 'logged_in' not in st.session_state:
