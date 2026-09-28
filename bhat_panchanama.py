@@ -161,7 +161,7 @@ USER_CREDENTIALS = {
     "RAMESH_KAMBLE": "Ravi*$@2",
     "SURYAKANT_JADHAV": "Sury***@##",
     "ANITA_KAMBLE": "Anita@123",
-    "JITENDRA_DESAI": "Jitendra@123",
+    "JITENDRA_DESAI": "Jitendra@1234",
 }
 
 USER_NAMES = {
