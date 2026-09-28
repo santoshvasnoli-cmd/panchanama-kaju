@@ -102,7 +102,7 @@ def get_db_engine():
     if not db_url:
         db_url = os.environ.get(
             "DATABASE_URL", 
-            "postgresql://postgres:OrBBcLgGcQSMKWYKWNBCkXUjsFWCjJWK@sakura.proxy.rlwy.net:19200/railway"
+            "postgresql://postgres:LddbJoTvNxLsYIaocARdqzDmsyGfUuSJ@postgres.railway.internal:5432/railway"
         )
 
     if db_url and db_url.startswith("postgres://"):
