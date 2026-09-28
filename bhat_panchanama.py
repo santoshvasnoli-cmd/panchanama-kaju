@@ -102,7 +102,7 @@ def get_db_engine():
     if not db_url:
         db_url = os.environ.get(
             "DATABASE_URL", 
-            "postgresql://postgres:LddbJoTvNxLsYIaocARdqzDmsyGfUuSJ@postgres.railway.internal:5432/railway"
+            "postgresql://postgres:LddbJoTvNxLsYIaocARdqzDmsyGfUuSJ@altaria.proxy.rlwy.net:12558/railway"
         )
 
     if db_url and db_url.startswith("postgres://"):
@@ -128,8 +128,6 @@ def init_db():
             "खातेदार" VARCHAR(150),
             "पीक" VARCHAR(100),
             "नुकसान_क्षेत्र" FLOAT,
-            "बाधित_झाडांची_संख्या" BIGINT,
-            "पिकाचा_प्रकार" VARCHAR(100),
             "नोंदणी_अधिकारी" VARCHAR(100),
             "शेरा" TEXT
         );
@@ -290,15 +288,14 @@ if df is not None:
     if not past_records.empty:
         st.markdown("---")
         st.subheader("📋 आधी नोंदवलेली पिके")
-        summary_df = past_records[['खातेदार', 'गट_क्र', 'खाते_क्र', 'पीक', 'नुकसान_क्षेत्र',"बाधित_झाडांची_संख्या",'पिकाचा_प्रकार']].rename(
+        summary_df = past_records[['खातेदार', 'गट_क्र', 'खाते_क्र', 'पीक', 'नुकसान_क्षेत्र',]].rename(
             columns={
                 'खातेदार': 'खातेदाराचे नाव',
                 'गट_क्र': 'गट क्रमांक',
                 'खाते_क्र': 'खाते क्रमांक',
                 'पीक': 'पीक',
                 'नुकसान_क्षेत्र': 'नोंदवलेले क्षेत्र (हे.)',
-                'बाधित_झाडांची_संख्या': 'बाधित झाडे',
-                'पिकाचा_प्रकार': 'पिकाचा प्रकार',
+
             }
         )
         st.table(summary_df)
@@ -311,7 +308,7 @@ if df is not None:
     st.subheader("नुकसानीचा तपशील")
 
     with st.form("panchnama_form", clear_on_submit=True):
-        selected_crop = st.selectbox("नुकसान झालेले पीक निवडा", options=["काजू"])
+        selected_crop = st.selectbox("नुकसान झालेले पीक निवडा", options=["भात", "नाचणी", "भुईमुग"])
         
         damage_area = st.number_input(
             f"नुकसान क्षेत्र भरा (कमाल {remaining_area})", 
@@ -321,9 +318,8 @@ if df is not None:
             format="%.4f"
         )
         
-        tree_count = st.number_input("बाधित काजू झाडांची संख्या", min_value=1, step=1, value=1)
-        # 🌿 पिकाचा प्रकार समाविष्ट केला
-        crop_type = st.selectbox("पिकाचा प्रकार निवडा", options=["बांधावरील झाडे ", "सलग बाग "], index=0)
+        
+       
         remark = st.text_area("शेरा (काही असल्यास)")
         
         submit = st.form_submit_button("पंचनामा जतन करा")
@@ -343,8 +339,6 @@ if df is not None:
                     "खातेदार": final_data['name'],
                     "पीक": selected_crop, 
                     "नुकसान_क्षेत्र": float(damage_area),
-                    "बाधित_झाडांची_संख्या": int(tree_count),
-                    "पिकाचा_प्रकार": crop_type,
                     "नोंदणी_अधिकारी": st.session_state['user_display_name'],
                     "शेरा": remark
                 }
@@ -357,8 +351,6 @@ if df is not None:
                     "खातेदार": String(150),
                     "पीक": String(100),
                     "नुकसान_क्षेत्र": Float,
-                    "बाधित_झाडांची_संख्या": BigInteger,
-                    "पिकाचा_प्रकार": String(100),
                     "नोंदणी_अधिकारी": String(100),
                     "शेरा": Text
                 }
@@ -400,15 +392,14 @@ if df is not None:
 
         st.subheader(title)
         if not report_df.empty:
-            final_report = report_df[['खातेदार', 'गट_क्र', 'खाते_क्र', 'पीक', 'नुकसान_क्षेत्र',"बाधित_झाडांची_संख्या",'पिकाचा_प्रकार']].rename(
+            final_report = report_df[['खातेदार', 'गट_क्र', 'खाते_क्र', 'पीक', 'नुकसान_क्षेत्र']].rename(
                 columns={
                     'खातेदार': 'खातेदाराचे नाव',
                     'गट_क्र': 'गट',
                     'खाते_क्र': 'खाते',
                     'पीक': 'पीक',
                     'नुकसान_क्षेत्र': 'क्षेत्र (हे.)',
-                    'बाधित_झाडांची_संख्या': 'बाधित झाडे',
-                    'पिकाचा_प्रकार': 'पिकाचा प्रकार'
+
                 }
             )
             st.dataframe(final_report, use_container_width=True, hide_index=True)
@@ -447,7 +438,7 @@ if df is not None:
             with st.form("edit_form"):
                 st.info(f"नोंद बदलत आहे: {record['खातेदार']} (गट: {record['गट_क्र']})")
                 
-                crop_options = ["काजू"]
+                crop_options = ["भात", "नाचणी", "भुईमुग"]
                 current_crop_idx = crop_options.index(record['पीक']) if record['पीक'] in crop_options else 0
                 
                 new_crop = st.selectbox("पीक बदला", crop_options, index=current_crop_idx)
@@ -459,8 +450,8 @@ if df is not None:
                     format="%.4f"
                 )
                 
-                current_trees = int(record['बाधित_झाडांची_संख्या']) if 'बाधित_झाडांची_संख्या' in record and pd.notna(record['बाधित_झाडांची_संख्या']) else 0
-                new_trees = st.number_input("बाधित झाडांची संख्या दुरुस्त करा", min_value=0, value=current_trees, step=1)
+
+
                 
                 new_remark = st.text_area("शेरा बदला", value=str(record['शेरा']) if pd.notna(record['शेरा']) else "")
                 
@@ -472,14 +463,12 @@ if df is not None:
                             UPDATE panchnama_records 
                             SET "पीक" = :crop, 
                                 "नुकसान_क्षेत्र" = :area, 
-                                "बाधित_झाडांची_संख्या" = :trees, 
                                 "शेरा" = :remark 
                             WHERE "वेळ" = :time_val AND "खातेदार" = :farmer
                         """)
                         conn.execute(query, {
                             "crop": new_crop,
                             "area": new_area,
-                            "trees": new_trees,
                             "remark": new_remark,
                             "time_val": record['वेळ'],
                             "farmer": record['खातेदार']
